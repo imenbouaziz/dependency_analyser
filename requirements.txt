@@ -1,0 +1,20 @@
+# Dependency Analyzer Tool Requirements
+
+# Core MCP Server
+fastmcp>=0.2.0
+
+# Groq API (FREE & FAST!)
+groq>=0.4.0
+
+# Streamlit UI
+streamlit>=1.29.0
+streamlit-agraph>=0.0.45
+
+# Java AST Parser
+javalang>=0.13.0
+
+# XML Parsing (built-in, but listed for clarity)
+# xml.etree.ElementTree (standard library)
+
+# Optional: For advanced features
+# GitPython>=3.1.40  # For advanced Git operations
