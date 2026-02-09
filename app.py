@@ -12,13 +12,7 @@ from streamlit_agraph import agraph, Node, Edge, Config
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from mcp_server.utils.filesystem import clone_or_use_local, detect_ecosystem, get_project_name
-from mcp_server.scanners.maven_scanner import scan_maven_repo, scan_maven_repo_with_code_analysis
-from mcp_server.parsers.maven_parser import parse_maven_module
-from mcp_server.graph.graph_builder import build_graph
-from mcp_server.graph.impact_analysis import impact_summary
-from mcp_server.graph.recommendations import recommend_upgrade
-from mcp_server.graph.sbom_generator import generate_minimal_sbom
+# Only import MCP client - no direct tool access
 from mcp_server.client import SimpleMCPClient
 
 # Try to import agent (optional - works without Ollama)
@@ -28,6 +22,9 @@ try:
 except Exception as e:
     AGENT_AVAILABLE = False
     print(f"Agent import failed: {e}")
+
+# Constants
+AGENT_NOT_AVAILABLE_MSG = "❌ AI Agent not available"
 
 # Page configuration
 st.set_page_config(
@@ -103,94 +100,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-def scan_repository(repo_path_or_url: str) -> Dict:
-    """Scan and analyze a repository."""
-    with st.spinner("🔍 Processing repository..."):
-        # Step 1: Clone or use local
-        repo_result = clone_or_use_local(repo_path_or_url)
-        if not repo_result["success"]:
-            return {"error": repo_result.get("error", "Failed to access repository")}
-        
-        repo_path = repo_result["path"]
-        
-        # Step 2: Detect ecosystem
-        ecosystem = detect_ecosystem(repo_path)
-        if not ecosystem:
-            return {"error": f"Could not detect build system in {repo_path}"}
-        
-        st.session_state.ecosystem = ecosystem
-        
-        # Step 3: Scan based on ecosystem (WITH code analysis)
-        if ecosystem == "maven":
-            st.info("🔍 Performing enhanced scan with static code analysis...")
-            scan_result = scan_maven_repo_with_code_analysis(repo_path, analyze_code=True)
-            
-            # Store code analysis separately
-            if "code_analysis" in scan_result:
-                st.session_state.code_analysis = scan_result["code_analysis"]
-            
-            # Store class dependencies separately
-            if "class_dependencies" in scan_result:
-                st.session_state.class_dependencies = scan_result["class_dependencies"]
-        else:
-            return {"error": f"{ecosystem.capitalize()} support coming soon!"}
-        
-        if "error" in scan_result:
-            return scan_result
-        
-        # Step 4: Parse modules
-        parsed_modules = []
-        modules = scan_result.get("modules", [])
-        
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        for i, module in enumerate(modules):
-            module_path = module.get("path")
-            module_name = module.get("name", "unknown")
-            
-            status_text.text(f"Parsing module {i+1}/{len(modules)}: {module_name}")
-            
-            if module_path and ecosystem == "maven":
-                parse_result = parse_maven_module(module_path)
-                if "error" not in parse_result:
-                    parsed_modules.append(parse_result)
-                    st.write(f"✅ Parsed {module_name}: {len(parse_result.get('dependencies', []))} dependencies found")
-                else:
-                    st.warning(f"⚠️ Could not parse {module_name}: {parse_result.get('error', 'Unknown error')}")
-            progress_bar.progress((i + 1) / len(modules))
-        
-        status_text.empty()
-        
-        if not parsed_modules:
-            return {"error": "No modules could be parsed"}
-        
-        # Step 5: Build graph
-        graph = build_graph(parsed_modules)
-        
-        # Update session state
-        st.session_state.graph = graph
-        st.session_state.project_name = get_project_name(repo_path)
-        st.session_state.repo_path = repo_path
-        
-        # Update MCP client with new graph
-        if st.session_state.mcp_client is None:
-            st.session_state.mcp_client = SimpleMCPClient(
-                graph=graph,
-                project_name=st.session_state.project_name
-            )
-        else:
-            st.session_state.mcp_client.update_graph(graph)
-            st.session_state.mcp_client.update_project_name(st.session_state.project_name)
-        
-        return {
-            "success": True,
-            "ecosystem": ecosystem,
-            "project_name": st.session_state.project_name,
-            "modules": len(parsed_modules),
-            "nodes": len(graph.get("nodes", [])),
-            "edges": len(graph.get("edges", []))
-        }
+# No direct scan_repository function - all scanning goes through agent
 
 def generate_neo4j_cypher(graph: Dict, project_name: str) -> str:
     """Generate Neo4j Cypher queries to import the dependency graph."""
@@ -315,7 +225,7 @@ with st.sidebar:
     
     if analyze_button and repo_input:
         if not AGENT_AVAILABLE:
-            st.error("❌ AI Agent not available. Cannot perform analysis.")
+            st.error(AGENT_NOT_AVAILABLE_MSG + ". Cannot perform analysis.")
         else:
             # Initialize agent first
             if init_agent():
@@ -401,11 +311,20 @@ if st.session_state.graph is None:
     
     for name, url in examples:
         if st.button(f"Try: {name}", key=url):
-            result = scan_repository(url)
-            if "error" in result:
-                st.error(f"❌ {result['error']}")
+            if not AGENT_AVAILABLE:
+                st.error(AGENT_NOT_AVAILABLE_MSG + ". Cannot perform analysis.")
             else:
-                st.rerun()
+                if init_agent():
+                    with st.spinner(f"🤖 Agent is analyzing {name}..."):
+                        response = st.session_state.agent.run(
+                            f"Scan and analyze this repository: {url}",
+                            context={"action": "scan_repository", "repo_path": url}
+                        )
+                        if st.session_state.graph:
+                            st.success(f"✅ Successfully analyzed {name}!")
+                            st.rerun()
+                        else:
+                            st.error("Analysis failed")
 
 else:
     # Tabs for different features
@@ -481,17 +400,27 @@ else:
         st.divider()
         st.subheader("📄 Export SBOM")
         
-        if st.button("Generate SBOM", type="primary"):
-            sbom = generate_minimal_sbom(st.session_state.graph, st.session_state.project_name)
-            st.json(sbom)
-            
-            import json
-            st.download_button(
-                label="⬇️ Download SBOM (JSON)",
-                data=json.dumps(sbom, indent=2),
-                file_name=f"{st.session_state.project_name}_sbom.json",
-                mime="application/json"
-            )
+        if not AGENT_AVAILABLE:
+            st.error(AGENT_NOT_AVAILABLE_MSG)
+        else:
+            if st.button("Generate SBOM", type="primary"):
+                if init_agent():
+                    with st.spinner("🤖 Agent is generating SBOM..."):
+                        response = st.session_state.agent.run(
+                            "Generate an SBOM for this project",
+                            context={"action": "export_sbom", "project_name": st.session_state.project_name}
+                        )
+                        st.write(response)
+                        
+                        # Try to extract SBOM from response if it was generated
+                        if "sbom_data" in st.session_state:
+                            import json
+                            st.download_button(
+                                label="⬇️ Download SBOM (JSON)",
+                                data=json.dumps(st.session_state.sbom_data, indent=2),
+                                file_name=f"{st.session_state.project_name}_sbom.json",
+                                mime="application/json"
+                            )
     
     # Tab 2: AST Analysis (Full Code Insights)
     with tab2:
@@ -1217,41 +1146,33 @@ else:
         st.header("Impact Analysis")
         st.write("Analyze which modules depend on a specific artifact")
         
-        artifact_coord = st.text_input(
-            "Artifact Coordinate",
-            placeholder="group:artifact:version (e.g., org.springframework:spring-core:5.3.0)",
-            help="Enter the full artifact coordinate to analyze"
-        )
-        
-        if st.button("Analyze Impact", type="primary"):
-            if artifact_coord:
-                with st.spinner("Analyzing impact..."):
-                    result = impact_summary(st.session_state.graph, artifact_coord)
-                    
-                    if "error" in result:
-                        st.error(f"❌ {result['error']}")
-                    else:
-                        st.success("✅ Impact Analysis Complete")
-                        
-                        st.subheader("Results")
-                        st.json(result)
-                        
-                        affected = result.get("affected_modules", [])
-                        if affected:
-                            st.warning(f"⚠️ This artifact affects {len(affected)} module(s)")
-                            for mod in affected:
-                                st.write(f"- {mod}")
-                        else:
-                            st.info("ℹ️ No modules directly depend on this artifact")
-            else:
-                st.warning("Please enter an artifact coordinate")
+        if not AGENT_AVAILABLE:
+            st.error(AGENT_NOT_AVAILABLE_MSG)
+        else:
+            artifact_coord = st.text_input(
+                "Artifact Coordinate",
+                placeholder="group:artifact:version (e.g., org.springframework:spring-core:5.3.0)",
+                help="Enter the full artifact coordinate to analyze"
+            )
+            
+            if st.button("Analyze Impact", type="primary"):
+                if artifact_coord:
+                    if init_agent():
+                        with st.spinner("🤖 Agent is analyzing impact..."):
+                            response = st.session_state.agent.run(
+                                f"Analyze the impact of artifact: {artifact_coord}",
+                                context={"action": "artifact_impact", "artifact": artifact_coord}
+                            )
+                            st.write(response)
+                else:
+                    st.warning("Please enter an artifact coordinate")
     
     with tab6:
         st.header("💡 Recommendations")
         st.write("Get version upgrade suggestions for artifacts")
         
         if not AGENT_AVAILABLE:
-            st.error("❌ AI Agent not available")
+            st.error(AGENT_NOT_AVAILABLE_MSG)
         else:
             rec_artifact = st.text_input(
                 "Artifact to Upgrade",
@@ -1283,7 +1204,7 @@ else:
         st.header("🤖 AI Assistant")
         
         if not AGENT_AVAILABLE:
-            st.error("❌ AI Agent not available. Ollama may not be running or configured.")
+            st.error(AGENT_NOT_AVAILABLE_MSG + ". Ollama may not be running or configured.")
         else:
             # Show MCP status
             col1, col2 = st.columns([3, 1])

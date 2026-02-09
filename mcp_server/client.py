@@ -224,7 +224,16 @@ class SimpleMCPClient:
     
     def export_sbom(self, project_name: str = None) -> Dict[str, Any]:
         """Export SBOM for the project."""
-        return self._export_sbom(project_name or self.project_name)
+        if not self.graph:
+            return {"error": "No dependency graph loaded"}
+        
+        sbom = self._generate_sbom(self.graph, project_name or self.project_name)
+        
+        # Store SBOM in session state for download
+        if self.session_state is not None:
+            self.session_state.sbom_data = sbom
+        
+        return sbom
     
     def scan_repository(self, repo_path_or_url: str) -> Dict[str, Any]:
         """
