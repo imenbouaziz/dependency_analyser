@@ -192,7 +192,6 @@ class SimpleMCPClient:
         """
         # Import the tools directly
         from mcp_server.graph.impact_analysis import impact_summary
-        from mcp_server.graph.recommendations import recommend_upgrade
         from mcp_server.graph.sbom_generator import generate_minimal_sbom
         from mcp_server.utils.filesystem import clone_or_use_local, detect_ecosystem, get_project_name
         from mcp_server.scanners.maven_scanner import scan_maven_repo_with_code_analysis
@@ -203,7 +202,6 @@ class SimpleMCPClient:
         self.project_name = project_name
         self.session_state = session_state
         self._impact_summary = impact_summary
-        self._recommend_upgrade = recommend_upgrade
         self._generate_sbom = generate_minimal_sbom
         self._clone_or_use_local = clone_or_use_local
         self._detect_ecosystem = detect_ecosystem
@@ -217,10 +215,6 @@ class SimpleMCPClient:
         if not self.graph:
             return {"error": "No dependency graph loaded"}
         return self._impact_summary(self.graph, artifact_coord)
-    
-    def artifact_recommendation(self, artifact_coord: str, policy: str = "latest_patch") -> Dict[str, Any]:
-        """Get upgrade recommendation for an artifact."""
-        return self._recommend_upgrade(artifact_coord, policy)
     
     def export_sbom(self, project_name: str = None) -> Dict[str, Any]:
         """Export SBOM for the project."""

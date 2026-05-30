@@ -55,24 +55,24 @@ class OllamaLLM:
             if response.status_code == 200:
                 models = response.json().get("models", [])
                 model_names = [m["name"] for m in models]
-                print(f"✅ Ollama is running! Available models: {', '.join(model_names) if model_names else 'None'}")
+                print(f"Ollama is running! Available models: {', '.join(model_names) if model_names else 'None'}")
                 
                 if not model_names:
-                    print("\n⚠️  No models downloaded yet!")
+                    print("\nWarning: No models downloaded yet!")
                     print("   Download from home/mobile hotspot:")
                     print("   ollama pull llama3.1")
                 elif model_id not in model_names and f"{model_id}:latest" not in model_names:
-                    print(f"\n⚠️  Model '{model_id}' not found. Using first available model.")
+                    print(f"\nWarning: Model '{model_id}' not found. Using first available model.")
                     self.model_id = model_names[0]
             else:
-                print("⚠️  Ollama server not responding properly")
+                print("Warning: Ollama server not responding properly")
         except requests.exceptions.ConnectionError:
-            print("\n❌ Ollama is NOT running!")
+            print("\nError: Ollama is NOT running!")
             print("   1. Install Ollama: https://ollama.com/download")
             print("   2. Start Ollama (it runs automatically on Windows)")
             print("   3. Download model from home: ollama pull llama3.1")
         except Exception as e:
-            print(f"⚠️  Error connecting to Ollama: {e}")
+            print(f"Warning: Error connecting to Ollama: {e}")
     
     def _format_messages(self, messages: List[Dict], system: Optional[str] = None) -> str:
         """Format messages for Ollama API."""

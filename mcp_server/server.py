@@ -7,7 +7,6 @@ from typing import Dict, List
 
 from mcp_server.graph.graph_builder import build_graph
 from mcp_server.graph.impact_analysis import impact_summary
-from mcp_server.graph.recommendations import recommend_upgrade
 from mcp_server.graph.sbom_generator import generate_minimal_sbom
 from mcp_server.utils.filesystem import clone_or_use_local, detect_ecosystem, get_project_name
 from mcp_server.scanners.maven_scanner import scan_maven_repo
@@ -35,13 +34,6 @@ def artifact_impact(artifact_coord: str) -> Dict:
     if not STATE["graph"]:
         return {"error": "Graph not built yet. Call build_dependency_graph first."}
     return impact_summary(STATE["graph"], artifact_coord)
-
-@mcp.tool()
-def artifact_recommendation(artifact_coord: str, policy: str = "latest_patch") -> Dict:
-    """
-    Suggest a naive version upgrade for the given artifact coordinate.
-    """
-    return recommend_upgrade(artifact_coord, policy)
 
 @mcp.tool()
 def export_sbom(project_name: str = "java-project") -> Dict:

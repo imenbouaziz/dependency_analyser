@@ -24,12 +24,12 @@ except Exception as e:
     print(f"Agent import failed: {e}")
 
 # Constants
-AGENT_NOT_AVAILABLE_MSG = "❌ AI Agent not available"
+AGENT_NOT_AVAILABLE_MSG = "AI Agent not available"
 
 # Page configuration
 st.set_page_config(
     page_title="Dependency Analyzer",
-    page_icon="📦",
+    page_icon="D",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -190,11 +190,6 @@ def init_agent():
                 "Analyze which modules depend on a specific artifact (format: group:artifact:version)"
             )
             agent.register_tool(
-                "artifact_recommendation",
-                lambda artifact_coord, policy="latest_patch": mcp.artifact_recommendation(artifact_coord, policy),
-                "Get version upgrade recommendations for an artifact"
-            )
-            agent.register_tool(
                 "export_sbom",
                 lambda project_name=None: mcp.export_sbom(project_name),
                 "Generate a CycloneDX SBOM for the project"
@@ -208,11 +203,11 @@ def init_agent():
     return st.session_state.agent is not None
 
 # Header
-st.markdown('<div class="main-header">📦 Dependency Analyzer</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Dependency Analyzer</div>', unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.header("Configuration")
     
     # Repository input
     repo_input = st.text_input(
@@ -221,7 +216,7 @@ with st.sidebar:
         help="Enter a local filesystem path or a GitHub repository URL"
     )
     
-    analyze_button = st.button("🔍 Analyze Repository", type="primary", use_container_width=True)
+    analyze_button = st.button("Analyze Repository", type="primary", use_container_width=True)
     
     if analyze_button and repo_input:
         if not AGENT_AVAILABLE:
@@ -229,7 +224,7 @@ with st.sidebar:
         else:
             # Initialize agent first
             if init_agent():
-                with st.spinner("🤖 Agent is analyzing repository..."):
+                with st.spinner("Agent is analyzing repository..."):
                     # Ask agent to scan repository
                     response = st.session_state.agent.run(
                         f"Scan and analyze this repository: {repo_input}",
@@ -238,18 +233,18 @@ with st.sidebar:
                     
                     # Check if successful
                     if st.session_state.graph:
-                        st.success(f"✅ Successfully analyzed {st.session_state.project_name}!")
+                        st.success(f"Successfully analyzed {st.session_state.project_name}!")
                         st.rerun()
                     else:
-                        st.error(f"❌ Analysis failed. Agent response: {response}")
+                        st.error(f"Analysis failed. Agent response: {response}")
             else:
-                st.error("❌ Failed to initialize agent")
+                st.error("Failed to initialize agent")
     
     st.divider()
     
     # Project info
     if st.session_state.graph:
-        st.subheader("📊 Project Info")
+        st.subheader("Project Info")
         st.write(f"**Name:** {st.session_state.project_name}")
         st.write(f"**Ecosystem:** {st.session_state.ecosystem or 'Unknown'}")
         st.write(f"**Nodes:** {len(st.session_state.graph.get('nodes', []))}")
@@ -257,13 +252,13 @@ with st.sidebar:
         
         # MCP connection status
         if st.session_state.mcp_client:
-            st.success("🔌 MCP Client: Connected")
+            st.success("MCP Client: Connected")
         else:
-            st.warning("🔌 MCP Client: Not initialized")
+            st.warning("MCP Client: Not initialized")
         st.write(f"**Nodes:** {len(st.session_state.graph.get('nodes', []))}")
         st.write(f"**Edges:** {len(st.session_state.graph.get('edges', []))}")
         
-        if st.button("🗑️ Clear Project", use_container_width=True):
+        if st.button("Clear Project", use_container_width=True):
             st.session_state.graph = None
             st.session_state.project_name = None
             st.session_state.repo_path = None
@@ -274,34 +269,34 @@ with st.sidebar:
     st.divider()
     
     # AI Agent status
-    st.subheader("🤖 AI Agent")
+    st.subheader("AI Agent")
     if AGENT_AVAILABLE:
-        st.success("✅ Ollama available")
+        st.success("Ollama available")
     else:
-        st.info("ℹ️ AI features disabled")
+        st.info("AI features disabled")
 
 # Main content
 if st.session_state.graph is None:
     # Welcome screen
-    st.info("👈 Enter a repository path or URL in the sidebar to get started!")
+    st.info("Enter a repository path or URL in the sidebar to get started!")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("### 🔍 Auto-Detection")
+        st.markdown("### Auto-Detection")
         st.write("Automatically detects Maven, Gradle, Node.js, and Python projects")
     
     with col2:
-        st.markdown("### 📊 Dependency Analysis")
-        st.write("Build dependency graphs, analyze impacts, and get recommendations")
+        st.markdown("### Dependency Analysis")
+        st.write("Build dependency graphs and analyze impacts")
     
     with col3:
-        st.markdown("### 🤖 AI-Powered")
+        st.markdown("### AI-Powered")
         st.write("Ask questions in natural language using Ollama LLM")
     
     st.divider()
     
-    st.markdown("### 📝 Example Repositories")
+    st.markdown("### Example Repositories")
     
     examples = [
         ("Apache Commons Lang", "https://github.com/apache/commons-lang"),
@@ -315,27 +310,25 @@ if st.session_state.graph is None:
                 st.error(AGENT_NOT_AVAILABLE_MSG + ". Cannot perform analysis.")
             else:
                 if init_agent():
-                    with st.spinner(f"🤖 Agent is analyzing {name}..."):
+                    with st.spinner(f"Agent is analyzing {name}..."):
                         response = st.session_state.agent.run(
                             f"Scan and analyze this repository: {url}",
                             context={"action": "scan_repository", "repo_path": url}
                         )
                         if st.session_state.graph:
-                            st.success(f"✅ Successfully analyzed {name}!")
+                            st.success(f"Successfully analyzed {name}!")
                             st.rerun()
                         else:
                             st.error("Analysis failed")
 
 else:
     # Tabs for different features
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-        "📊 Overview",
-        "🔗 Class Dependencies",
-        "💻 Runtime Analysis", 
-        "🔍 Graph View", 
-        "🔎 Impact Analysis", 
-        "💡 Recommendations", 
-        "🤖 AI Chat"
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "Overview",
+        "Class Dependencies",
+        "Runtime Analysis", 
+        "Graph View", 
+        "Impact Analysis"
     ])
     
     with tab1:
@@ -379,7 +372,7 @@ else:
         st.divider()
         
         # Dependencies list
-        st.subheader("📦 All Dependencies")
+        st.subheader("All Dependencies")
         
         nodes = st.session_state.graph.get("nodes", [])
         if nodes:
@@ -398,14 +391,14 @@ else:
         
         # Download SBOM
         st.divider()
-        st.subheader("📄 Export SBOM")
+        st.subheader("Export SBOM")
         
         if not AGENT_AVAILABLE:
             st.error(AGENT_NOT_AVAILABLE_MSG)
         else:
             if st.button("Generate SBOM", type="primary"):
                 if init_agent():
-                    with st.spinner("🤖 Agent is generating SBOM..."):
+                    with st.spinner("Agent is generating SBOM..."):
                         response = st.session_state.agent.run(
                             "Generate an SBOM for this project",
                             context={"action": "export_sbom", "project_name": st.session_state.project_name}
@@ -416,7 +409,7 @@ else:
                         if "sbom_data" in st.session_state:
                             import json
                             st.download_button(
-                                label="⬇️ Download SBOM (JSON)",
+                                label="Download SBOM (JSON)",
                                 data=json.dumps(st.session_state.sbom_data, indent=2),
                                 file_name=f"{st.session_state.project_name}_sbom.json",
                                 mime="application/json"
@@ -424,16 +417,16 @@ else:
     
     # Tab 2: AST Analysis (Full Code Insights)
     with tab2:
-        st.header("🌳 AST Code Analysis")
+        st.header("AST Code Analysis")
         st.write("**Complete AST-based code analysis** - Full parse tree with all details")
         
         if "ast_analysis" not in st.session_state or not st.session_state.ast_analysis:
-            st.info("👈 Scan a repository first to see full AST analysis")
+            st.info("Scan a repository first to see full AST analysis")
         else:
             ast_data = st.session_state.ast_analysis
             
             # Overview Metrics
-            st.subheader("📊 Code Metrics")
+            st.subheader("Code Metrics")
             
             metrics = ast_data.get('metrics', {})
             
@@ -464,7 +457,7 @@ else:
             st.divider()
             
             # Most Coupled Classes
-            st.subheader("⚠️ Most Coupled Classes")
+            st.subheader("Most Coupled Classes")
             st.write("Classes with highest number of dependencies (hardest to refactor)")
             
             most_coupled = metrics.get('most_coupled_classes', [])
@@ -473,33 +466,33 @@ else:
                     simple_name = class_name.split('.')[-1]
                     package = '.'.join(class_name.split('.')[:-1])
                     
-                    color = "🔴" if dep_count > 15 else "🟡" if dep_count > 8 else "🟢"
-                    st.write(f"{color} **{i}. {simple_name}** ({package}) - {dep_count} dependencies")
+                    coupling = "HIGH" if dep_count > 15 else "MEDIUM" if dep_count > 8 else "LOW"
+                    st.write(f"{i}. **{simple_name}** ({package}) - {dep_count} dependencies [{coupling} coupling]")
             else:
                 st.info("No coupling data available")
             
             st.divider()
             
             # Circular Dependencies
-            st.subheader("🔄 Circular Dependencies")
+            st.subheader("Circular Dependencies")
             
             circular = ast_data.get('circular_dependencies', [])
             if circular:
                 st.warning(f"Found {len(circular)} circular dependency chain(s)!")
                 
                 for i, cycle in enumerate(circular[:10], 1):
-                    cycle_names = " → ".join([c.split('.')[-1] for c in cycle])
+                    cycle_names = " > ".join([c.split('.')[-1] for c in cycle])
                     st.error(f"**Cycle {i}:** {cycle_names}")
                     
                     with st.expander(f"View full chain {i}"):
-                        st.code(" → ".join(cycle))
+                        st.code(" > ".join(cycle))
             else:
-                st.success("✅ No circular dependencies found!")
+                st.success("No circular dependencies found!")
             
             st.divider()
             
             # Detailed Class Browser
-            st.subheader("🔍 Class Explorer")
+            st.subheader("Class Explorer")
             
             classes = ast_data.get('classes', [])
             if classes:
@@ -538,7 +531,7 @@ else:
                         if selected_class.fields:
                             st.write(f"**Fields ({len(selected_class.fields)}):**")
                             for field in selected_class.fields[:20]:  # Limit display
-                                visibility = "🔒" if "private" in field.modifiers else "🔓" if "public" in field.modifiers else "🔐"
+                                visibility = "[-]" if "private" in field.modifiers else "[+]" if "public" in field.modifiers else "[#]"
                                 annot_str = f" {', '.join(field.annotations)}" if field.annotations else ""
                                 st.write(f"  {visibility} `{field.type} {field.name}`{annot_str}")
                         
@@ -546,7 +539,7 @@ else:
                         if selected_class.methods:
                             st.write(f"**Methods ({len(selected_class.methods)}):**")
                             for method in selected_class.methods[:20]:  # Limit display
-                                visibility = "🔒" if "private" in method.modifiers else "🔓" if "public" in method.modifiers else "🔐"
+                                visibility = "[-]" if "private" in method.modifiers else "[+]" if "public" in method.modifiers else "[#]"
                                 params = ", ".join([f"{p['type']} {p['name']}" for p in method.parameters])
                                 return_type = method.return_type or "void"
                                 annot_str = f" {', '.join(method.annotations)}" if method.annotations else ""
@@ -562,13 +555,13 @@ else:
             # Errors
             errors = ast_data.get('errors', [])
             if errors:
-                with st.expander(f"⚠️ Parsing Errors ({len(errors)})"):
+                with st.expander(f"Parsing Errors ({len(errors)})"):
                     for error in errors[:20]:
                         st.error(f"**{error['file']}**: {error['error']}")
     
     # Tab 3: Legacy Class Dependencies
     with tab2:
-        st.header("� Internal Class Dependencies")
+        st.header("Internal Class Dependencies")
         st.write("**Service decomposition analysis** - Which classes depend on each other")
         
         if st.session_state.class_dependencies:
@@ -591,7 +584,7 @@ else:
             st.divider()
             
             # Data Coupling Summary
-            st.subheader("📊 Data Coupling Analysis")
+            st.subheader("Data Coupling Analysis")
             st.write("Attribute-level dependencies and encapsulation quality")
             
             all_classes_data = class_data.get("classes", [])
@@ -609,18 +602,18 @@ else:
                 st.metric("Total Attributes", total_attributes)
             with col2:
                 st.metric("Classes Using Getters", classes_with_getters)
-                st.caption("✅ Good encapsulation")
+                st.caption("Good encapsulation")
             with col3:
                 st.metric("Direct Field Access", classes_with_direct_access)
                 if classes_with_direct_access > 0:
-                    st.caption("⚠️ Encapsulation violations")
+                    st.caption("Encapsulation violations")
                 else:
-                    st.caption("✅ No violations")
+                    st.caption("No violations")
             
             st.divider()
             
             # Most Coupled Classes (Refactoring Priority)
-            st.subheader("⚠️ Most Coupled Classes (High Priority for Refactoring)")
+            st.subheader("Most Coupled Classes (High Priority for Refactoring)")
             st.write("These classes have the most dependencies - hardest to extract/refactor")
             
             most_coupled = stats.get("most_coupled", [])
@@ -630,15 +623,15 @@ else:
                     package = '.'.join(item['class'].split('.')[:-1])
                     dep_count = item['dependency_count']
                     
-                    color = "🔴" if dep_count > 10 else "🟡" if dep_count > 5 else "🟢"
-                    st.write(f"{color} **{i}. {class_name}** ({package}) - {dep_count} dependencies")
+                    coupling = "HIGH" if dep_count > 10 else "MEDIUM" if dep_count > 5 else "LOW"
+                    st.write(f"{i}. **{class_name}** ({package}) - {dep_count} dependencies [{coupling} coupling]")
             else:
                 st.info("No coupling data available")
             
             st.divider()
             
             # Circular Dependencies (Breaking Changes)
-            st.subheader("🔄 Circular Dependencies")
+            st.subheader("Circular Dependencies")
             st.write("These classes depend on each other - need refactoring to break cycles")
             
             circular = stats.get("circular_dependencies", [])
@@ -646,18 +639,18 @@ else:
                 st.warning(f"Found {len(circular)} circular dependency chain(s)!")
                 
                 for i, cycle in enumerate(circular[:5], 1):
-                    cycle_str = " → ".join([c.split('.')[-1] for c in cycle])
+                    cycle_str = " > ".join([c.split('.')[-1] for c in cycle])
                     st.error(f"**Cycle {i}:** {cycle_str}")
                     
                     with st.expander(f"View full chain {i}"):
-                        st.code(" → ".join(cycle))
+                        st.code(" > ".join(cycle))
             else:
-                st.success("✅ No circular dependencies found!")
+                st.success("No circular dependencies found!")
             
             st.divider()
             
             # Package Coupling
-            st.subheader("📦 Package Coupling")
+            st.subheader("Package Coupling")
             st.write("Classes grouped by package")
             
             packages = class_data.get("packages", {})
@@ -683,7 +676,7 @@ else:
             st.divider()
             
             # Class Dependency Explorer
-            st.subheader("🔍 Class Dependency Explorer")
+            st.subheader("Class Dependency Explorer")
             st.write("Explore dependencies for a specific class")
             
             all_classes = class_data.get("classes", [])
@@ -719,15 +712,15 @@ else:
                     
                     # Show attributes
                     if class_info.get('attributes'):
-                        st.subheader("📋 Attributes (Fields):")
+                        st.subheader("Attributes (Fields):")
                         
                         for attr in class_info['attributes']:
                             visibility_icon = {
-                                'public': '🟢',
-                                'private': '🔴',
-                                'protected': '🟡',
-                                'package': '⚪'
-                            }.get(attr['visibility'], '⚪')
+                                'public': 'PUBLIC',
+                                'private': 'PRIVATE',
+                                'protected': 'PROTECTED',
+                                'package': 'PACKAGE'
+                            }.get(attr['visibility'], 'PACKAGE')
                             
                             annotations = f" {', '.join(['@' + a for a in attr['annotations']])}" if attr.get('annotations') else ""
                             
@@ -739,7 +732,7 @@ else:
                     
                     # Show attribute access patterns
                     if class_info.get('attribute_access'):
-                        st.subheader("🔗 Attribute Access (Data Coupling):")
+                        st.subheader("Attribute Access (Data Coupling):")
                         st.write("This class accesses attributes/data from other classes:")
                         
                         # Group by access type
@@ -748,21 +741,19 @@ else:
                         direct = [a for a in class_info['attribute_access'] if a['access_type'] == 'direct']
                         
                         if getters:
-                            with st.expander(f"✅ Getter Calls ({len(getters)})"):
+                            with st.expander(f"Getter Calls ({len(getters)})"):
                                 for acc in getters[:20]:
-                                    st.write(f"- `{acc['target_class']}.{acc['method']}()` → gets `{acc['attribute']}`")
+                                    st.write(f"- {acc['target_class']}.{acc['method']}() -> {acc['attribute']}")
                         
                         if setters:
-                            with st.expander(f"✏️ Setter Calls ({len(setters)})"):
+                            with st.expander(f"Setter Calls ({len(setters)})"):
                                 for acc in setters[:20]:
-                                    st.write(f"- `{acc['target_class']}.{acc['method']}()` → sets `{acc['attribute']}`")
+                                    st.write(f"- {acc['target_class']}.{acc['method']}() -> {acc['attribute']}")
                         
                         if direct:
-                            with st.expander(f"⚠️ Direct Field Access ({len(direct)}) - Encapsulation Violation"):
+                            with st.expander(f"Direct Field Access ({len(direct)}) - Encapsulation Violation"):
                                 for acc in direct[:20]:
-                                    st.write(f"- `{acc['target_class']}.{acc['attribute']}` (direct access)")
-                    
-                    st.divider()
+                                    st.write(f"- {acc['target_class']}.{acc['attribute']} (direct access)")
                     
                     # Show dependencies
                     if class_info.get('dependencies'):
@@ -770,7 +761,7 @@ else:
                         for dep in class_info['dependencies']:
                             st.write(f"- `{dep}`")
                     else:
-                        st.success("✅ No dependencies - isolated class!")
+                        st.success("No dependencies - isolated class!")
                     
                     # Show methods
                     if class_info.get('methods'):
@@ -781,7 +772,7 @@ else:
             st.divider()
             
             # Service Decomposition Suggestions
-            st.subheader("🎯 Service Decomposition Suggestions")
+            st.subheader("Service Decomposition Suggestions")
             st.write("Candidate classes for splitting into microservices")
             
             isolated = stats.get("isolated_classes", [])
@@ -789,7 +780,7 @@ else:
                 st.success(f"Found {len(isolated)} isolated class(es) - easy to extract!")
                 with st.expander(f"View {len(isolated)} isolated classes"):
                     for cls in isolated[:20]:
-                        st.write(f"- `{cls}`")
+                        st.write(f"- {cls}")
             else:
                 st.info("No isolated classes found")
             
@@ -798,13 +789,13 @@ else:
                 st.write("**Suggested service boundaries (by package):**")
                 for pkg, classes in list(packages.items())[:10]:
                     if len(classes) > 3:  # Only packages with multiple classes
-                        st.write(f"📦 **{pkg}** ({len(classes)} classes) → Candidate for microservice")
+                        st.write(f"[PKG] **{pkg}** ({len(classes)} classes) → Candidate for microservice")
         
         else:
             st.info("No class dependency analysis available. Run a repository scan to analyze internal dependencies.")
     
     with tab3:
-        st.header("�💻 Runtime Dependency Analysis")
+        st.header("Runtime Dependency Analysis")
         st.write("**Static code analysis** - What your code actually uses at runtime")
         
         if st.session_state.code_analysis:
@@ -823,14 +814,14 @@ else:
             st.divider()
             
             # Hot Dependencies - Most Used Libraries
-            st.subheader("🔥 Most Used Dependencies (by file count)")
+            st.subheader("Most Used Dependencies (by file count)")
             
             hot_deps = code_data.get("hot_dependencies", [])
             if hot_deps:
                 for i, dep in enumerate(hot_deps[:10], 1):
                     with st.expander(f"{i}. **{dep['library']}** - Used in {dep['file_count']} files"):
-                        st.write(f"📦 **Import count:** {dep['import_count']}")
-                        st.write(f"📝 **Classes used:** {', '.join(dep['classes'][:20])}")
+                        st.write(f"**Import count:** {dep['import_count']}")
+                        st.write(f"**Classes used:** {', '.join(dep['classes'][:20])}")
                         
                         if len(dep['classes']) > 20:
                             st.caption(f"...and {len(dep['classes']) - 20} more classes")
@@ -840,7 +831,7 @@ else:
             st.divider()
             
             # API Calls Detection
-            st.subheader("🌐 External API Calls")
+            st.subheader("External API Calls")
             
             api_calls = code_data.get("api_calls", [])
             if api_calls:
@@ -864,7 +855,7 @@ else:
             st.divider()
             
             # Library Breakdown
-            st.subheader("📚 Library Usage Details")
+            st.subheader("Library Usage Details")
             
             libraries = code_data.get("libraries", {})
             if libraries:
@@ -886,7 +877,7 @@ else:
             st.divider()
             
             # Impact Analysis Helper
-            st.subheader("⚠️ Migration Impact Preview")
+            st.subheader("Migration Impact Preview")
             st.write("**What breaks if you remove/replace a library?**")
             
             selected_lib = st.selectbox(
@@ -899,9 +890,9 @@ else:
                 st.warning(f"""
                 **Impact of removing `{selected_lib}`:**
                 
-                - 🗂️ **{lib_stats['file_count']} files** would need refactoring
-                - 📦 **{lib_stats['import_count']} import statements** would break
-                - 🔧 **{len(lib_stats['classes'])} classes** would need replacement
+                - **{lib_stats['file_count']} files** would need refactoring
+                - **{lib_stats['import_count']} import statements** would break
+                - **{len(lib_stats['classes'])} classes** would need replacement
                 
                 **Classes to replace:** {', '.join(lib_stats['classes'][:10])}
                 {f'...and {len(lib_stats["classes"]) - 10} more' if len(lib_stats['classes']) > 10 else ''}
@@ -917,7 +908,7 @@ else:
         col1, col2 = st.columns([3, 1])
         
         with col2:
-            st.subheader("⚙️ Display Options")
+            st.subheader("Display Options")
             show_modules = st.checkbox("Show Modules", value=True)
             show_artifacts = st.checkbox("Show Artifacts", value=True)
             show_classes = st.checkbox("Show Class Dependencies", value=False, 
@@ -929,7 +920,7 @@ else:
             )
         
         with col1:
-            if st.button("🔄 Refresh Graph", type="primary"):
+            if st.button("Refresh Graph", type="primary"):
                 st.rerun()
             
             # Build graph visualization
@@ -1052,37 +1043,37 @@ else:
             
             # Display graph
             if nodes_viz:
-                st.info(f"📊 Displaying {len(nodes_viz)} nodes and {len(edges_viz)} edges")
+                st.info(f"Displaying {len(nodes_viz)} nodes and {len(edges_viz)} edges")
                 agraph(nodes=nodes_viz, edges=edges_viz, config=config)
             else:
                 st.warning("No nodes to display. Enable at least one node type.")
             
             # Legend
             st.divider()
-            st.subheader("📌 Legend")
+            st.subheader("Legend")
             lcol1, lcol2 = st.columns(2)
             with lcol1:
-                st.markdown("🟦 **Blue Boxes** = Modules")
+                st.markdown("Square Blue = Modules")
             with lcol2:
-                st.markdown("🟧 **Orange Dots** = Artifacts")
+                st.markdown("Square Orange = Artifacts")
             
             # Neo4j Export Section
             st.divider()
-            st.subheader("🗄️ Export to Neo4j")
+            st.subheader("Export to Neo4j")
             st.write("Generate Cypher queries to import this graph into Neo4j Database")
             
             col_neo1, col_neo2 = st.columns([2, 1])
             
             with col_neo1:
-                if st.button("🔧 Generate Neo4j Cypher Script", type="primary"):
+                if st.button("Generate Neo4j Cypher Script", type="primary"):
                     cypher_script = generate_neo4j_cypher(st.session_state.graph, st.session_state.project_name)
                     st.session_state.neo4j_script = cypher_script
-                    st.success("✅ Cypher script generated!")
+                    st.success("Cypher script generated!")
             
             with col_neo2:
                 if "neo4j_script" in st.session_state:
                     st.download_button(
-                        label="⬇️ Download .cypher",
+                        label="Download .cypher",
                         data=st.session_state.neo4j_script,
                         file_name=f"{st.session_state.project_name}_neo4j_import.cypher",
                         mime="text/plain"
@@ -1090,10 +1081,10 @@ else:
             
             # Show preview and instructions
             if "neo4j_script" in st.session_state:
-                with st.expander("📝 View Cypher Script Preview"):
+                with st.expander("View Cypher Script Preview"):
                     st.code(st.session_state.neo4j_script[:1000] + "\n..." if len(st.session_state.neo4j_script) > 1000 else st.session_state.neo4j_script, language="cypher")
                 
-                with st.expander("📖 How to Import into Neo4j"):
+                with st.expander("How to Import into Neo4j"):
                     st.markdown("""
                     ### Option 1: Neo4j Desktop
                     1. Open **Neo4j Desktop**
@@ -1158,7 +1149,7 @@ else:
             if st.button("Analyze Impact", type="primary"):
                 if artifact_coord:
                     if init_agent():
-                        with st.spinner("🤖 Agent is analyzing impact..."):
+                        with st.spinner("Agent is analyzing impact..."):
                             response = st.session_state.agent.run(
                                 f"Analyze the impact of artifact: {artifact_coord}",
                                 context={"action": "artifact_impact", "artifact": artifact_coord}
@@ -1166,129 +1157,7 @@ else:
                             st.write(response)
                 else:
                     st.warning("Please enter an artifact coordinate")
-    
-    with tab6:
-        st.header("💡 Recommendations")
-        st.write("Get version upgrade suggestions for artifacts")
-        
-        if not AGENT_AVAILABLE:
-            st.error(AGENT_NOT_AVAILABLE_MSG)
-        else:
-            rec_artifact = st.text_input(
-                "Artifact to Upgrade",
-                placeholder="group:artifact:version",
-                key="rec_artifact"
-            )
-            
-            policy = st.selectbox(
-                "Upgrade Policy",
-                ["latest_patch", "latest_minor", "latest_major"],
-                help="Choose the upgrade strategy"
-            )
-            
-            if st.button("💡 Get Recommendation", type="primary"):
-                if rec_artifact:
-                    if init_agent():
-                        with st.spinner("🤖 Agent is generating recommendations..."):
-                            response = st.session_state.agent.run(
-                                f"Recommend upgrade for artifact: {rec_artifact} using policy: {policy}",
-                                context={"action": "artifact_recommendation", "artifact": rec_artifact, "policy": policy}
-                            )
-                            st.write(response)
-                    else:
-                        st.error("Failed to initialize agent")
-                else:
-                    st.warning("Please enter an artifact coordinate")
-    
-    with tab7:
-        st.header("🤖 AI Assistant")
-        
-        if not AGENT_AVAILABLE:
-            st.error(AGENT_NOT_AVAILABLE_MSG + ". Ollama may not be running or configured.")
-        else:
-            # Show MCP status
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.info("💬 Ask questions about your dependencies in natural language!")
-            with col2:
-                if st.session_state.mcp_client:
-                    st.success("🔌 MCP Connected")
-                else:
-                    st.warning("⚠️ No MCP client")
-            
-            # Initialize agent
-            if init_agent():
-                
-                # Chat interface
-                chat_container = st.container()
-                
-                with chat_container:
-                    # Display chat history
-                    for msg in st.session_state.chat_history:
-                        with st.chat_message(msg["role"]):
-                            st.write(msg["content"])
-                
-                # User input
-                user_query = st.chat_input("Ask a question about dependencies...")
-                
-                if user_query:
-                    # Add user message
-                    st.session_state.chat_history.append({"role": "user", "content": user_query})
-                    
-                    with st.chat_message("user"):
-                        st.write(user_query)
-                    
-                    # Get agent response
-                    with st.chat_message("assistant"):
-                        with st.spinner("Thinking..."):
-                            response = st.session_state.agent.chat(user_query)
-                            st.write(response)
-                    
-                    # Add assistant message
-                    st.session_state.chat_history.append({"role": "assistant", "content": response})
-                
-                # Quick questions
-                st.divider()
-                st.subheader("Quick Questions")
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    if st.button("📋 List all dependencies"):
-                        st.session_state.chat_history.append({
-                            "role": "user",
-                            "content": "List all dependencies in this project"
-                        })
-                        st.rerun()
-                    
-                    if st.button("🔐 Check for vulnerabilities"):
-                        st.session_state.chat_history.append({
-                            "role": "user",
-                            "content": "Are there any vulnerable or outdated dependencies?"
-                        })
-                        st.rerun()
-                
-                with col2:
-                    if st.button("📊 Generate SBOM"):
-                        st.session_state.chat_history.append({
-                            "role": "user",
-                            "content": "Generate an SBOM for this project"
-                        })
-                        st.rerun()
-                    
-                    if st.button("🔄 Suggest upgrades"):
-                        st.session_state.chat_history.append({
-                            "role": "user",
-                            "content": "Recommend safe dependency upgrades"
-                        })
-                        st.rerun()
-                
-                if st.button("🗑️ Clear Chat"):
-                    st.session_state.chat_history = []
-                    if st.session_state.agent:
-                        st.session_state.agent.conversation_history = []
-                    st.rerun()
 
 # Footer
 st.divider()
-st.caption("Built with ❤️ using Streamlit | Dependency Analyzer v1.0")
+st.caption("Built with Streamlit | Dependency Analyzer v1.0")

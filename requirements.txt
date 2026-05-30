@@ -3,9 +3,6 @@
 # Core MCP Server
 fastmcp>=0.2.0
 
-# Groq API (FREE & FAST!)
-groq>=0.4.0
-
 # Streamlit UI
 streamlit>=1.29.0
 streamlit-agraph>=0.0.45

@@ -428,12 +428,6 @@ def create_agent_with_mcp_tools(
     )
     
     agent.register_tool(
-        "artifact_recommendation",
-        recommendation_func,
-        "Get version upgrade recommendations for an artifact"
-    )
-    
-    agent.register_tool(
         "export_sbom",
         sbom_func,
         "Export a CycloneDX SBOM for the project"
